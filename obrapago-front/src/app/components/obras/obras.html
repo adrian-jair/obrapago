@@ -1,0 +1,293 @@
+<div class="container-fluid">
+  <!-- Header de Sección -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom gap-2">
+    <div>
+      <h3 class="fw-bold text-dark mb-1">Módulo N:M — Asignación de Obreros a Obras</h3>
+      <p class="text-muted mb-0">Gestión de proyectos, frentes de trabajo y asignación masiva de cuadrilla de obreros.
+      </p>
+    </div>
+    <div class="d-flex align-items-center gap-2" *ngIf="keycloak.canManageObras()">
+      <button class="btn btn-outline-success btn-sm fw-bold px-3 py-2" (click)="abrirFormularioNuevaObra()">
+        <i class="bi bi-plus-circle me-1"></i>Nueva Obra
+      </button>
+      <button *ngIf="obraActual" class="btn btn-outline-primary btn-sm fw-bold px-3 py-2"
+        (click)="abrirFormularioEditarObra()">
+        <i class="bi bi-pencil me-1"></i>Editar Obra
+      </button>
+      <button *ngIf="obraActual" class="btn btn-outline-danger btn-sm fw-bold px-2 py-2" (click)="eliminarObraActual()"
+        title="Eliminar Obra">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Alertas -->
+  <div *ngIf="mensajeExito" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+    <strong><i class="bi bi-check-circle me-1"></i>Éxito:</strong> {{ mensajeExito }}
+    <button type="button" class="btn-close" (click)="mensajeExito = ''"></button>
+  </div>
+  <div *ngIf="mensajeError" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+    <strong><i class="bi bi-exclamation-triangle me-1"></i>Error:</strong> {{ mensajeError }}
+    <button type="button" class="btn-close" (click)="mensajeError = ''"></button>
+  </div>
+
+  <!-- Barra de Selección de Obra y Estadísticas -->
+  <div class="row g-3 mb-4">
+    <!-- Selector de Obra -->
+    <div class="col-lg-5 col-md-6">
+      <div class="card shadow-sm border-0 p-3 bg-white h-100 justify-content-center">
+        <label class="form-label fw-bold mb-1 text-secondary">Seleccionar Obra / Proyecto</label>
+        <div class="input-group">
+          <select class="form-select form-select-lg fw-bold text-primary" [(ngModel)]="obraSeleccionadaId"
+            (change)="seleccionarObra(obraSeleccionadaId!)">
+            <option *ngIf="obras.length === 0" [ngValue]="null">-- No hay obras creadas --</option>
+            <option *ngFor="let ob of obras" [ngValue]="ob.id">
+              {{ ob.codigo }} - {{ ob.nombre }} ({{ ob.totalObreros }} obreros)
+            </option>
+          </select>
+          <button class="btn btn-outline-primary" (click)="cargarDatosIniciales()" title="Recargar"><i
+              class="bi bi-arrow-clockwise"></i></button>
+        </div>
+        <small *ngIf="obraActual" class="text-muted mt-2">
+          <i class="bi bi-geo-alt me-1"></i><strong>Ubicación:</strong> {{ obraActual.ubicacion || 'No especificada' }}
+          &bull;
+          <i class="bi bi-building me-1"></i><strong>Cliente:</strong> {{ obraActual.cliente || 'Interno' }}
+        </small>
+      </div>
+    </div>
+
+    <!-- Tarjetas de Resumen Rápido (Estilo Asistencia) -->
+    <div class="col-lg-7 col-md-6">
+      <div class="row g-2 h-100">
+        <div class="col-6 col-md-3">
+          <div class="card border-0 bg-primary-subtle text-primary p-3 text-center h-100 rounded-3 shadow-sm">
+            <span class="fs-4 fw-bold">{{ totalAsignados }}</span>
+            <small class="fw-semibold">Obreros en Obra</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div
+            class="card border-0 bg-secondary-subtle text-secondary-emphasis p-3 text-center h-100 rounded-3 shadow-sm">
+            <span class="fs-4 fw-bold">{{ totalDisponibles }}</span>
+            <small class="fw-semibold">Disponibles</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 bg-success-subtle text-success p-3 text-center h-100 rounded-3 shadow-sm">
+            <span class="fs-5 fw-bold">S/ {{ (obraActual?.presupuesto || 0) | number:'1.0-0' }}</span>
+            <small class="fw-semibold">Presupuesto</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 bg-info-subtle text-info-emphasis p-3 text-center h-100 rounded-3 shadow-sm">
+            <span class="badge bg-primary fs-6 mb-1">{{ obraActual?.estado || 'SIN OBRA' }}</span>
+            <small class="fw-semibold d-block">Estado Obra</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botones de Acción Masiva -->
+  <div class="card shadow-sm border-0 rounded-3 mb-4">
+    <!-- Banner de modo solo lectura si no tiene permiso de cuadrilla -->
+    <div *ngIf="!keycloak.canAssignCuadrilla()"
+      class="alert alert-secondary py-2 px-3 m-3 mb-0 small d-flex align-items-center justify-content-between border-0">
+      <div>
+        <i class="bi bi-shield-lock me-1"></i>
+        <strong>Modo Consulta ({{ keycloak.getUserFullName() }}):</strong>
+        <span class="ms-1">Solo el <strong>ADMINISTRADOR</strong> y el <strong>SUPERVISOR</strong> pueden asignar o
+          modificar la cuadrilla de la obra.</span>
+      </div>
+      <span class="badge" [ngClass]="keycloak.getRoleBadgeInfo().color">{{ keycloak.getRoleBadgeInfo().label }}</span>
+    </div>
+
+    <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <!-- Acciones Rápidas en Bloque (Solo Admin o Supervisor) -->
+      <div class="d-flex align-items-center gap-2 flex-wrap" *ngIf="keycloak.canAssignCuadrilla()">
+        <span class="fw-bold text-dark">Acciones Rápidas:</span>
+        <button class="btn btn-sm btn-outline-success fw-semibold" (click)="marcarTodos(true)">
+          <i class="bi bi-check2-all me-1"></i>Asignar Todos
+        </button>
+        <button class="btn btn-sm btn-outline-secondary fw-semibold" (click)="marcarTodos(false)">
+          <i class="bi bi-x-lg me-1"></i>Desmarcar Todos
+        </button>
+        <div class="btn-group btn-group-sm">
+          <button class="btn btn-outline-info" (click)="marcarPorOficio('OPERARIO')">+ Operarios</button>
+          <button class="btn btn-outline-info" (click)="marcarPorOficio('OFICIAL')">+ Oficiales</button>
+          <button class="btn btn-outline-info" (click)="marcarPorOficio('PEON')">+ Peones</button>
+        </div>
+      </div>
+
+      <!-- Filtro y Botón Guardar Cuadrilla -->
+      <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
+        <input type="text" class="form-control form-control-sm" [(ngModel)]="filtroTexto"
+          placeholder="Filtrar por nombre o DNI..." style="width: 200px;">
+        <select class="form-select form-select-sm" [(ngModel)]="filtroOficio" style="width: 140px;">
+          <option value="">Todos los oficios</option>
+          <option value="MAESTRO">Maestro</option>
+          <option value="OPERARIO">Operario</option>
+          <option value="OFICIAL">Oficial</option>
+          <option value="PEON">Peón</option>
+        </select>
+        <button *ngIf="keycloak.canAssignCuadrilla()" class="btn btn-primary btn-sm fw-bold px-3 py-2 shadow-sm"
+          (click)="guardarAsignacionesMasivas()" [disabled]="guardando || !obraSeleccionadaId">
+          <span *ngIf="guardando" class="spinner-border spinner-border-sm me-1"></span>
+          Guardar Cuadrilla de la Obra
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabla Masiva de Obreros para la Obra -->
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th style="width: 50px;">#</th>
+            <th style="width: 70px;">Foto</th>
+            <th style="width: 110px;">DNI</th>
+            <th>Apellidos y Nombres (A-Z)</th>
+            <th style="width: 160px;">Oficio</th>
+            <th style="width: 120px;">Tarifa Jornal</th>
+            <th style="width: 130px;">Celular</th>
+            <th class="text-center" style="width: 180px;">¿Asignado a Obra?</th>
+            <th class="text-center" style="width: 100px;">Estado BD</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="cargando">
+            <td colspan="9" class="text-center py-4 text-muted">
+              <div class="spinner-border text-primary me-2" role="status"></div> Cargando obreros y asignaciones...
+            </td>
+          </tr>
+          <tr *ngIf="!cargando && obrerosFiltrados.length === 0">
+            <td colspan="9" class="text-center py-4 text-muted">
+              No se encontraron obreros registrados o con el filtro seleccionado.
+            </td>
+          </tr>
+          <tr *ngFor="let o of obrerosFiltrados; let idx = index" [ngClass]="o.asignado ? 'table-primary-subtle' : ''">
+            <td><small class="text-muted">{{ idx + 1 }}</small></td>
+            <td>
+              <img
+                [src]="o.fotoUrl || 'https://ui-avatars.com/api/?name=' + o.apellidos + '+' + o.nombres + '&background=0D8ABC&color=fff'"
+                class="rounded-circle border" width="36" height="36" alt="Avatar">
+            </td>
+            <td><strong class="font-monospace">{{ o.dni }}</strong></td>
+            <td>
+              <div class="fw-bold"><strong class="text-primary">{{ o.apellidos }}</strong>, {{ o.nombres }}</div>
+            </td>
+            <td>
+              <span class="badge bg-secondary">{{ o.oficio || 'Sin oficio' }}</span>
+            </td>
+            <td>
+              <span class="text-success fw-bold">S/ {{ o.tarifaJornal | number:'1.2-2' }}</span>
+            </td>
+            <td>
+              <small class="text-muted">{{ o.celular || '—' }}</small>
+            </td>
+            <!-- Switch Masivo de Asignación -->
+            <td class="text-center">
+              <div class="form-check form-switch d-inline-flex justify-content-center align-items-center">
+                <input class="form-check-input fs-5 cursor-pointer" type="checkbox" role="switch" [checked]="o.asignado"
+                  [disabled]="!keycloak.canAssignCuadrilla()" (change)="toggleAsignacion(o)">
+                <label class="form-check-label ms-2 fw-semibold" [ngClass]="o.asignado ? 'text-primary' : 'text-muted'">
+                  {{ o.asignado ? 'ASIGNADO' : 'NO ASIGNADO' }}
+                </label>
+              </div>
+            </td>
+            <!-- Indicador de guardado -->
+            <td class="text-center">
+              <span *ngIf="o.asignado === o.guardadoEnBd" class="badge"
+                [ngClass]="o.guardadoEnBd ? 'bg-success' : 'bg-light text-muted border'">
+                {{ o.guardadoEnBd ? 'En BD' : '—' }}
+              </span>
+              <span *ngIf="o.asignado !== o.guardadoEnBd" class="badge bg-warning text-dark animate-pulse">
+                <i class="bi bi-clock-history me-1"></i>Pendiente
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer de la Tabla con Resumen -->
+    <div class="card-footer bg-light py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <small class="text-muted">
+        Mostrando {{ obrerosFiltrados.length }} trabajadores &bull;
+        <strong>{{ totalAsignados }}</strong> seleccionados para la cuadrilla.
+      </small>
+      <button *ngIf="keycloak.canAssignCuadrilla()" class="btn btn-primary fw-bold px-4"
+        (click)="guardarAsignacionesMasivas()" [disabled]="guardando || !obraSeleccionadaId">
+        <i class="bi bi-floppy me-1"></i>Guardar Asignaciones de la Cuadrilla
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal / Formulario Flotante de Crear / Editar Obra -->
+  <div *ngIf="mostrarFormularioObra" class="modal-backdrop fade show"></div>
+  <div *ngIf="mostrarFormularioObra" class="modal fade show d-block" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content shadow-lg border-0 rounded-3">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title fw-bold">
+            <i class="bi" [ngClass]="modoEdicion ? 'bi-pencil-square' : 'bi-building-add'"></i>
+            <span class="ms-2">{{ modoEdicion ? 'Editar Obra' : 'Registrar Nueva Obra / Proyecto' }}</span>
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="cerrarFormulario()"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Código de Obra *</label>
+              <input type="text" class="form-control" [(ngModel)]="formularioObra.codigo"
+                placeholder="Ej: OBR-2026-001">
+            </div>
+            <div class="col-md-8">
+              <label class="form-label fw-bold">Nombre del Proyecto / Obra *</label>
+              <input type="text" class="form-control" [(ngModel)]="formularioObra.nombre"
+                placeholder="Ej: Residencial Las Palmeras II">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Ubicación</label>
+              <input type="text" class="form-control" [(ngModel)]="formularioObra.ubicacion"
+                placeholder="Ej: Av. Brasil 450, Jesús María, Lima">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Cliente / Entidad</label>
+              <input type="text" class="form-control" [(ngModel)]="formularioObra.cliente"
+                placeholder="Ej: Inmobiliaria San Martín SAC">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Presupuesto Estimado (S/.)</label>
+              <input type="number" class="form-control" [(ngModel)]="formularioObra.presupuesto">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Fecha Inicio</label>
+              <input type="date" class="form-control" [(ngModel)]="formularioObra.fechaInicio">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Estado</label>
+              <select class="form-select" [(ngModel)]="formularioObra.estado">
+                <option *ngFor="let est of estadosObra" [value]="est">{{ est }}</option>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-bold">Descripción / Alcance</label>
+              <textarea class="form-control" rows="3" [(ngModel)]="formularioObra.descripcion"
+                placeholder="Detalles de la construcción, frentes, plazos..."></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" (click)="cerrarFormulario()">Cancelar</button>
+          <button type="button" class="btn btn-success fw-bold px-4" (click)="guardarFormularioObra()">
+            {{ modoEdicion ? 'Actualizar Obra' : 'Crear Obra' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,206 @@
+<div class="container-fluid">
+  <!-- Header de Sección -->
+  <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+      <h3 class="fw-bold text-dark mb-1">Módulo 8: Detalles de Pago por Planilla</h3>
+      <p class="text-muted mb-0">Nómina individualizada de obreros con numeración consecutiva, desglose de haberes y boleta de pago.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <label class="fw-bold text-secondary mb-0">Seleccionar Planilla:</label>
+      <select class="form-select form-select-sm" [(ngModel)]="planillaSeleccionadaId" (change)="cargarDetallesDePlanilla()" style="min-width: 320px;">
+        <option *ngFor="let p of planillas" [value]="p.id">
+          Planilla N° {{ p.numeroSecuencial }} ({{ p.fechaInicio }} al {{ p.fechaFin }}) - {{ p.estado }}
+        </option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Resumen de Totales de la Planilla -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm bg-white p-3 rounded-3 border-start border-4 border-primary">
+        <small class="text-secondary fw-bold text-uppercase">Total Bruto Devengado</small>
+        <h4 class="text-primary fw-bold mb-0">S/. {{ totalBrutoGeneral | number:'1.2-2' }}</h4>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm bg-white p-3 rounded-3 border-start border-4 border-danger">
+        <small class="text-secondary fw-bold text-uppercase">Total Deducción Adelantos</small>
+        <h4 class="text-danger fw-bold mb-0">- S/. {{ totalAdelantosGeneral | number:'1.2-2' }}</h4>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm bg-white p-3 rounded-3 border-start border-4 border-success">
+        <small class="text-secondary fw-bold text-uppercase">Total Neto a Pagar</small>
+        <h4 class="text-success fw-bold mb-0">S/. {{ totalNetoGeneral | number:'1.2-2' }}</h4>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Detalles de Pago -->
+  <div class="card shadow-sm border-0 rounded-3 mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+      <h5 class="fw-bold mb-0 text-dark">
+        Desglose de Pago por Obrero
+        <span *ngIf="planillaActual" class="badge bg-light text-dark border ms-2">
+          Planilla N° {{ planillaActual.numeroSecuencial }} ({{ planillaActual.fechaInicio }} al {{ planillaActual.fechaFin }})
+        </span>
+      </h5>
+      <span class="badge bg-secondary">{{ detalles.length }} trabajadores liquidados</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover table-striped align-middle mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th style="width: 70px;">N°</th>
+            <th>DNI</th>
+            <th>Trabajador (A-Z)</th>
+            <th class="text-center">Días Trab.</th>
+            <th class="text-center">H. Extra</th>
+            <th class="text-end">Tarifa Diaria</th>
+            <th class="text-end">Tarifa Hora</th>
+            <th class="text-end text-primary">Monto Bruto</th>
+            <th class="text-end text-danger">Adelantos</th>
+            <th class="text-end text-success">Neto a Cobrar</th>
+            <th class="text-center">Boleta</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let d of detalles; let idx = index">
+            <td>
+              <span class="badge bg-light text-dark border fw-bold">N° {{ idx + 1 }}</span>
+            </td>
+            <td><span class="badge bg-light text-dark border">{{ d.dni }}</span></td>
+            <td>
+              <strong>{{ d.nombreCompleto }}</strong>
+              <div *ngIf="d.celular" class="text-muted"><small><i class="bi bi-telephone me-1"></i>{{ d.celular }}</small></div>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-secondary-subtle text-secondary">{{ d.diasLaborados }} d</span>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-info-subtle text-info-emphasis">{{ d.horasExtra || 0 }} h</span>
+            </td>
+            <td class="text-end">S/. {{ d.tarifaJornal | number:'1.2-2' }}</td>
+            <td class="text-end">S/. {{ d.tarifaHora | number:'1.2-2' }}</td>
+            <td class="text-end fw-bold text-primary">S/. {{ d.bruto | number:'1.2-2' }}</td>
+            <td class="text-end fw-bold text-danger">- S/. {{ d.adelantos | number:'1.2-2' }}</td>
+            <td class="text-end fw-bold text-success fs-6">S/. {{ d.neto | number:'1.2-2' }}</td>
+            <td class="text-center">
+              <button class="btn btn-sm btn-outline-primary" (click)="verBoleta(d)">
+                <i class="bi bi-file-earmark-text me-1"></i>Boleta
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="detalles.length === 0">
+            <td colspan="11" class="text-center py-4 text-muted">
+              {{ cargando ? 'Cargando desglose de la planilla...' : 'No hay detalles de pago para la planilla seleccionada.' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal / Vista de Boleta de Pago Formal -->
+  <div *ngIf="boletaSeleccionada" class="boleta-overlay d-flex justify-content-center align-items-center">
+    <div class="boleta-modal card shadow-lg border-0 p-4">
+      <div class="d-flex justify-content-between align-items-start border-bottom pb-3 mb-3">
+        <div>
+          <h4 class="fw-bold text-primary mb-0"><i class="bi bi-building me-2"></i>ObraPago Constructora S.A.C.</h4>
+          <small class="text-muted">RUC: 20489563211 | Sistema de Control de Jornales y Planillas</small>
+        </div>
+        <button class="btn-close no-print" (click)="cerrarBoleta()"></button>
+      </div>
+
+      <div class="text-center my-2">
+        <h5 class="fw-bold text-uppercase text-decoration-underline mb-1">BOLETA DE PAGO DE JORNAL</h5>
+        <div class="mt-1">
+          <span class="badge bg-light text-dark border me-2">Planilla N° {{ boletaSeleccionada.numeroPlanilla }}</span>
+          <span class="badge bg-light text-dark border">
+            Periodo: {{ boletaSeleccionada.periodoInicio }} al {{ boletaSeleccionada.periodoFin }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Datos del Obrero -->
+      <div class="bg-light p-3 rounded-3 mb-3 border">
+        <div class="row">
+          <div class="col-6 mb-1">
+            <strong>Trabajador:</strong> {{ boletaSeleccionada.nombreCompleto }}
+          </div>
+          <div class="col-6 mb-1">
+            <strong>DNI:</strong> {{ boletaSeleccionada.dni }}
+          </div>
+          <div class="col-6 mb-1">
+            <strong>Tarifa Pactada:</strong> S/. {{ boletaSeleccionada.tarifaJornal | number:'1.2-2' }} / día
+          </div>
+          <div class="col-6 mb-1">
+            <strong>Estado Liquidación:</strong> {{ boletaSeleccionada.estadoPlanilla || 'GENERADA' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Desglose de Conceptos -->
+      <table class="table table-bordered mb-4">
+        <thead class="table-light">
+          <tr>
+            <th>Concepto / Descripción</th>
+            <th class="text-center">Cant. / Horas</th>
+            <th class="text-end">Ingresos (S/.)</th>
+            <th class="text-end">Descuentos (S/.)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Jornales Laborados en Obra</td>
+            <td class="text-center">{{ boletaSeleccionada.diasLaborados }} días</td>
+            <td class="text-end">S/. {{ (boletaSeleccionada.diasLaborados * boletaSeleccionada.tarifaJornal) | number:'1.2-2' }}</td>
+            <td class="text-end">-</td>
+          </tr>
+          <tr>
+            <td>Horas Extraordinarias</td>
+            <td class="text-center">{{ boletaSeleccionada.horasExtra }} horas</td>
+            <td class="text-end">S/. {{ (boletaSeleccionada.horasExtra * boletaSeleccionada.tarifaHora) | number:'1.2-2' }}</td>
+            <td class="text-end">-</td>
+          </tr>
+          <tr>
+            <td>Deducción por Vales / Adelantos de Caja</td>
+            <td class="text-center">-</td>
+            <td class="text-end">-</td>
+            <td class="text-end text-danger">S/. {{ boletaSeleccionada.adelantos | number:'1.2-2' }}</td>
+          </tr>
+          <tr class="table-secondary fw-bold">
+            <td colspan="2">SUBTOTALES</td>
+            <td class="text-end text-primary">S/. {{ boletaSeleccionada.bruto | number:'1.2-2' }}</td>
+            <td class="text-end text-danger">S/. {{ boletaSeleccionada.adelantos | number:'1.2-2' }}</td>
+          </tr>
+          <tr class="table-success fw-bold fs-5">
+            <td colspan="2" class="text-uppercase">NETO LÍQUIDO A COBRAR</td>
+            <td colspan="2" class="text-end text-success">S/. {{ boletaSeleccionada.neto | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Firmas -->
+      <div class="row text-center mt-4 pt-4 border-top">
+        <div class="col-6">
+          <div style="border-top: 1px dashed #666; width: 80%; margin: 0 auto; padding-top: 5px;">
+            <small>Firma del Empleador / Maestro</small>
+          </div>
+        </div>
+        <div class="col-6">
+          <div style="border-top: 1px dashed #666; width: 80%; margin: 0 auto; padding-top: 5px;">
+            <small>Firma y Huella del Trabajador</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-4 no-print">
+        <button class="btn btn-outline-secondary" (click)="cerrarBoleta()">Cerrar</button>
+        <button class="btn btn-primary fw-bold" (click)="imprimirBoleta()"><i class="bi bi-printer me-1"></i>Imprimir Boleta</button>
+      </div>
+    </div>
+  </div>
+</div>

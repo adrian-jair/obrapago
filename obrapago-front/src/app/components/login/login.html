@@ -1,0 +1,64 @@
+<div class="login-wrapper d-flex justify-content-center align-items-center">
+  <div class="login-card card shadow-lg border-0 rounded-4 p-4 p-md-5">
+    <!-- Logo / Cabecera -->
+    <div class="text-center mb-4">
+      <div class="brand-icon mb-2 text-primary fs-1"><i class="bi bi-building-fill-gear"></i></div>
+      <h3 class="fw-bold text-dark mb-1">ObraPago</h3>
+      <p class="text-muted small">Sistema de Control de Jornales, Asistencia y Pagos</p>
+    </div>
+
+
+
+    <!-- Botón Inicio de Sesión Keycloak (si está disponible) -->
+    <div class="mb-4">
+      <button class="btn btn-primary w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm"
+              (click)="iniciarConKeycloak()">
+        <i class="bi bi-shield-lock-fill"></i>
+        <span>Iniciar Sesión con Keycloak SSO</span>
+      </button>
+      <small class="text-muted text-center d-block mt-1">
+        Redirige al login central de Keycloak (Realm: obrapago-realm)
+      </small>
+    </div>
+
+    <div class="d-flex align-items-center my-3">
+      <hr class="flex-grow-1 my-0">
+      <span class="px-3 text-muted small fw-semibold">O INGRESO DIRECTO / EVALUACIÓN</span>
+      <hr class="flex-grow-1 my-0">
+    </div>
+
+    <!-- Formulario Local / Demo -->
+    <form (ngSubmit)="iniciarSesionLocal()">
+      <div class="mb-3">
+        <label class="form-label fw-bold text-secondary small">Usuario</label>
+        <input type="text" class="form-control" [(ngModel)]="username" name="username" placeholder="admin, supervisor, planillero..." required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-bold text-secondary small">Contraseña</label>
+        <input type="password" class="form-control" [(ngModel)]="password" name="password" placeholder="admin, supervisor..." required>
+      </div>
+
+      <div *ngIf="mensajeError" class="alert alert-danger py-2 small mb-3">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ mensajeError }}
+      </div>
+
+      <button type="submit" class="btn btn-dark w-100 py-2 fw-bold shadow-sm" [disabled]="cargando">
+        {{ cargando ? 'Ingresando...' : 'Iniciar Sesión Local' }}
+      </button>
+    </form>
+
+    <!-- Cuentas Rápidas de Prueba -->
+    <div class="mt-4 pt-3 border-top">
+      <small class="text-muted fw-bold d-block mb-2 text-center">Acceso Rápido con 1 Clic (Evaluación Docente):</small>
+      <div class="row g-2">
+        <div class="col-6" *ngFor="let c of cuentasDemo">
+          <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-start py-2" (click)="seleccionarCuenta(c)">
+            <div class="fw-bold text-dark">{{ c.username }}</div>
+            <small class="text-muted d-block" style="font-size: 0.72rem;">{{ c.label }}</small>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

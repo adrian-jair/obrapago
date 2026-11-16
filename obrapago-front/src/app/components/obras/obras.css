@@ -1,0 +1,30 @@
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.table-primary-subtle {
+  background-color: #f0f7ff !important;
+}
+
+.animate-pulse {
+  animation: pulse-glow 1.5s infinite;
+}
+
+@keyframes pulse-glow {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-backdrop.show {
+  opacity: 0.5;
+}

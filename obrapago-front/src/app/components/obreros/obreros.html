@@ -1,0 +1,217 @@
+<div class="row">
+  <!-- Formulario de Registro / Modificación (Solo ADMIN) -->
+  <div class="col-md-4" *ngIf="keycloak.isAdmin()">
+    <div class="card shadow-sm p-3 mb-4 border-0">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="card-title fw-bold text-info mb-0">
+          <i class="bi" [ngClass]="idEdicion ? 'bi-pencil-square' : 'bi-person-plus'"></i>
+          {{ idEdicion ? 'Modificar Obrero' : 'Registrar Obrero' }}
+        </h5>
+        <span class="badge bg-danger">ADMIN</span>
+      </div>
+      <hr>
+      <form (ngSubmit)="guardarObrero()">
+        <!-- DNI -->
+        <div class="mb-2">
+          <label class="form-label fw-semibold small">DNI</label>
+          <div class="input-group">
+            <input type="text" class="form-control" [(ngModel)]="nuevoObrero.dni" name="dni" placeholder="Ej: 74859632"
+              required maxlength="8" [disabled]="idEdicion !== null">
+            <button *ngIf="!idEdicion" class="btn btn-outline-primary" type="button" (click)="buscarDni()"
+              [disabled]="cargandoDni">
+              <i class="bi bi-search"></i> {{ cargandoDni ? '...' : 'Buscar' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Apellidos y Nombres -->
+        <div class="mb-2">
+          <label class="form-label fw-semibold small">Apellidos (Paterno y Materno)</label>
+          <input type="text" class="form-control" [(ngModel)]="nuevoObrero.apellidos" name="apellidos"
+            placeholder="Ej: Estrada Murga" required [disabled]="idEdicion !== null">
+        </div>
+        <div class="mb-2">
+          <label class="form-label fw-semibold small">Nombres</label>
+          <input type="text" class="form-control" [(ngModel)]="nuevoObrero.nombres" name="nombres"
+            placeholder="Ej: Juan Enrique" required [disabled]="idEdicion !== null">
+        </div>
+
+        <!-- Datos Laborales -->
+        <div class="mb-2">
+          <label class="form-label fw-semibold small">Oficio / Cargo</label>
+          <select class="form-select" [(ngModel)]="nuevoObrero.oficio" name="oficio">
+            <option value="OPERARIO">OPERARIO</option>
+            <option value="OFICIAL">OFICIAL</option>
+            <option value="PEON">PEON</option>
+            <option value="MAESTRO">MAESTRO</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label fw-semibold small">Tarifa Jornal (S/.)</label>
+          <input type="number" class="form-control" [(ngModel)]="nuevoObrero.tarifaJornal" name="tarifaJornal" required
+            min="1">
+        </div>
+        <div class="mb-2">
+          <label class="form-label fw-semibold small">Celular</label>
+          <input type="text" class="form-control" [(ngModel)]="nuevoObrero.celular" name="celular"
+            placeholder="Ej: 987654321" required maxlength="9">
+        </div>
+
+        <!-- Subir Foto del Obrero -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Foto del Obrero</label>
+          <input type="file" class="form-control form-control-sm" (change)="onFileSelected($event)" accept="image/*">
+          <div *ngIf="nuevoObrero.fotoUrl" class="mt-2 text-center">
+            <img [src]="nuevoObrero.fotoUrl" alt="Previsualización" class="rounded-circle border"
+              style="width: 70px; height: 70px; object-fit: cover;">
+          </div>
+        </div>
+
+        <button type="submit" class="btn w-100 fw-bold mb-2" [ngClass]="idEdicion ? 'btn-warning' : 'btn-primary'">
+          {{ idEdicion ? 'Guardar Cambios' : 'Guardar Obrero' }}
+        </button>
+
+        <button *ngIf="idEdicion" type="button" class="btn btn-secondary w-100 fw-bold" (click)="cancelarEdicion()">
+          Cancelar
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Listado de Obreros -->
+  <div [ngClass]="keycloak.isAdmin() ? 'col-md-8' : 'col-md-12'">
+    <div class="card shadow-sm p-3 border-0">
+      <!-- Banner informativo cuando el rol es de solo lectura -->
+      <div *ngIf="!keycloak.isAdmin()"
+        class="alert alert-secondary py-2 px-3 small d-flex align-items-center justify-content-between mb-3 border-0">
+        <div>
+          <i class="bi bi-shield-lock me-1"></i>
+          <strong>Modo Consulta ({{ keycloak.getUserFullName() }}):</strong>
+          <span class="ms-1">Los datos de los obreros están en modo solo lectura. Solo el <strong>ADMINISTRADOR</strong>
+            tiene permisos para crear, editar o dar de baja.</span>
+        </div>
+        <span class="badge" [ngClass]="keycloak.getRoleBadgeInfo().color">{{ keycloak.getRoleBadgeInfo().label }}</span>
+      </div>
+
+      <!-- Tarjetas de Resumen de Contratación -->
+      <div class="row g-2 mb-3">
+        <div class="col-md-4">
+          <div class="card bg-primary-subtle border-0 p-2 text-center rounded-3">
+            <small class="text-secondary fw-semibold">Total Padrón</small>
+            <h4 class="fw-bold text-primary mb-0">{{ obreros.length }}</h4>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-success-subtle border-0 p-2 text-center rounded-3">
+            <small class="text-success-emphasis fw-semibold"><i
+                class="bi bi-check-circle-fill text-success me-1"></i>Con Contrato Activo</small>
+            <h4 class="fw-bold text-success mb-0">{{ totalContratados }}</h4>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-warning-subtle border-0 p-2 text-center rounded-3">
+            <small class="text-warning-emphasis fw-semibold"><i
+                class="bi bi-exclamation-triangle-fill text-warning me-1"></i>Faltan Contratar</small>
+            <h4 class="fw-bold text-warning-emphasis mb-0">{{ totalFaltanContratar }}</h4>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros -->
+      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+        <div class="btn-group btn-group-sm" role="group">
+          <button type="button" class="btn"
+            [ngClass]="filtroContrato === 'TODOS' ? 'btn-dark' : 'btn-outline-secondary'"
+            (click)="filtroContrato = 'TODOS'">
+            Todos ({{ obreros.length }})
+          </button>
+          <button type="button" class="btn"
+            [ngClass]="filtroContrato === 'CONTRATADOS' ? 'btn-success' : 'btn-outline-success'"
+            (click)="filtroContrato = 'CONTRATADOS'">
+            <i class="bi bi-check-circle me-1"></i>Contratados ({{ totalContratados }})
+          </button>
+          <button type="button" class="btn"
+            [ngClass]="filtroContrato === 'PENDIENTES' ? 'btn-warning' : 'btn-outline-warning'"
+            (click)="filtroContrato = 'PENDIENTES'">
+            <i class="bi bi-exclamation-triangle me-1"></i>Faltan Contratar ({{ totalFaltanContratar }})
+          </button>
+        </div>
+
+        <div class="d-flex gap-2">
+          <input type="text" class="form-control form-control-sm" [(ngModel)]="filtroTexto"
+            placeholder="Buscar obrero..." style="width: 170px;">
+          <button class="btn btn-outline-secondary btn-sm" (click)="cargarObreros()" title="Actualizar">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover table-striped align-middle mt-2 mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th style="width: 50px;" class="text-center">N°</th>
+              <th style="width: 60px;">Foto</th>
+              <th style="width: 95px;">DNI</th>
+              <th>Apellidos y Nombres (A-Z)</th>
+              <th>Oficio</th>
+              <th>Jornal</th>
+              <th style="min-width: 130px;">Estado Contrato</th>
+              <th class="text-center" *ngIf="keycloak.isAdmin()" style="width: 90px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let o of obrerosFiltrados; let idx = index">
+              <td class="text-center">
+                <span class="badge bg-light text-dark border fw-bold">{{ idx + 1 }}</span>
+              </td>
+              <td>
+                <img
+                  [src]="o.fotoUrl || 'https://ui-avatars.com/api/?name=' + o.apellidos + '+' + o.nombres + '&background=0D8ABC&color=fff'"
+                  alt="avatar" class="rounded-circle border" style="width: 38px; height: 38px; object-fit: cover;">
+              </td>
+              <td><strong class="font-monospace">{{ o.dni }}</strong></td>
+              <td>
+                <strong class="text-primary">{{ o.apellidos }}</strong>, {{ o.nombres }}
+                <small class="d-block text-muted">{{ o.celular || 'Sin celular' }}</small>
+              </td>
+              <td><span class="badge bg-secondary">{{ o.oficio }}</span></td>
+              <td><strong class="text-success">S/. {{ o.tarifaJornal | number:'1.2-2' }}</strong></td>
+              <td>
+                <span *ngIf="o.tieneContrato" class="badge bg-success-subtle text-success border border-success">
+                  <i class="bi bi-check2 me-1"></i>CONTRATADO
+                </span>
+                <span *ngIf="!o.tieneContrato"
+                  class="badge bg-warning-subtle text-warning-emphasis border border-warning">
+                  <i class="bi bi-exclamation-circle me-1"></i>FALTA CONTRATO
+                </span>
+                <small *ngIf="o.tieneContrato" class="d-block text-muted font-monospace" style="font-size: 0.72rem;">
+                  {{ o.codigoContrato }}
+                </small>
+                <a *ngIf="!o.tieneContrato && keycloak.isAdmin()" routerLink="/contratos"
+                  class="badge bg-primary text-white text-decoration-none d-inline-block mt-1">
+                  <i class="bi bi-plus-circle me-1"></i>Crear Contrato
+                </a>
+              </td>
+              <td class="text-center" *ngIf="keycloak.isAdmin()">
+                <button type="button" class="btn btn-sm btn-outline-primary me-1 py-0 px-2"
+                  (click)="cargarParaEditar(o)" title="Editar Obrero">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" (click)="eliminarObrero(o.id)"
+                  title="Dar de baja / Eliminar">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="obrerosFiltrados.length === 0">
+              <td [attr.colspan]="keycloak.isAdmin() ? 8 : 7" class="text-center text-muted py-4">
+                No hay obreros en esta sección
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

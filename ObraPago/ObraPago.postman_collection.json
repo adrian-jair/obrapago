@@ -1,0 +1,52 @@
+{
+  "info": {
+    "name": "ObraPago - 6 módulos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{"key":"baseUrl","value":"http://localhost:8080"}],
+  "item": [
+    {
+      "name": "1 - Obreros",
+      "item": [
+        {"name":"Crear obrero 1","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"dni\": \"74859632\",\n  \"nombres\": \"Juan Enrique\",\n  \"apellidos\": \"Estrada Murga\",\n  \"oficio\": \"OPERARIO\",\n  \"tarifaJornal\": 90,\n  \"celular\": \"987654321\"\n}"},"url":{"raw":"{{baseUrl}}/api/v1/obreros","host":["{{baseUrl}}"],"path":["api","v1","obreros"]}}},
+        {"name":"Crear obrero 2","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"dni\": \"72584136\",\n  \"nombres\": \"Carlos\",\n  \"apellidos\": \"Mamani Quispe\",\n  \"oficio\": \"PEON\",\n  \"tarifaJornal\": 70,\n  \"celular\": \"986111222\"\n}"},"url":{"raw":"{{baseUrl}}/api/v1/obreros","host":["{{baseUrl}}"],"path":["api","v1","obreros"]}}},
+        {"name":"Listar obreros","request":{"method":"GET","url":{"raw":"{{baseUrl}}/api/v1/obreros","host":["{{baseUrl}}"],"path":["api","v1","obreros"]}}}
+      ]
+    },
+    {
+      "name":"2 - Asistencia",
+      "item":[
+        {"name":"Registrar jornada","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"fecha\": \"2026-09-14\",\n  \"detalles\": [\n    {\"obreroId\":1,\"estado\":\"PRESENTE\",\"horasExtra\":2,\"observacion\":\"Jornada normal\"},\n    {\"obreroId\":2,\"estado\":\"TARDANZA\",\"horasExtra\":1,\"observacion\":\"Llegó tarde\"}\n  ]\n}"},"url":{"raw":"{{baseUrl}}/api/v1/asistencias","host":["{{baseUrl}}"],"path":["api","v1","asistencias"]}}},
+        {"name":"Listar asistencias","request":{"method":"GET","url":{"raw":"{{baseUrl}}/api/v1/asistencias?desde=2026-09-14&hasta=2026-09-14","host":["{{baseUrl}}"],"path":["api","v1","asistencias"],"query":[{"key":"desde","value":"2026-09-14"},{"key":"hasta","value":"2026-09-14"}]}}}
+      ]
+    },
+    {
+      "name":"3 - Adelantos",
+      "item":[
+        {"name":"Registrar adelanto","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"obreroId\":1,\n  \"fecha\":\"2026-09-14\",\n  \"importe\":20,\n  \"concepto\":\"Vale de caja chica\"\n}"},"url":{"raw":"{{baseUrl}}/api/v1/adelantos","host":["{{baseUrl}}"],"path":["api","v1","adelantos"]}}},
+        {"name":"Listar adelantos","request":{"method":"GET","url":{"raw":"{{baseUrl}}/api/v1/adelantos?desde=2026-09-14&hasta=2026-09-14","host":["{{baseUrl}}"],"path":["api","v1","adelantos"],"query":[{"key":"desde","value":"2026-09-14"},{"key":"hasta","value":"2026-09-14"}]}}}
+      ]
+    },
+    {
+      "name":"4 - Pagos",
+      "item":[
+        {"name":"Procesar planilla","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"fechaInicio\":\"2026-09-14\",\n  \"fechaFin\":\"2026-09-14\"\n}"},"url":{"raw":"{{baseUrl}}/api/v1/pagos/procesar","host":["{{baseUrl}}"],"path":["api","v1","pagos","procesar"]}}},
+        {"name":"Listar planillas","request":{"method":"GET","url":{"raw":"{{baseUrl}}/api/v1/pagos","host":["{{baseUrl}}"],"path":["api","v1","pagos"]}}}
+      ]
+    },
+    {
+      "name":"5 - Mensajes",
+      "item":[
+        {"name":"Generar/enviar avisos planilla 1","request":{"method":"POST","url":{"raw":"{{baseUrl}}/api/v1/mensajes/planillas/1/enviar","host":["{{baseUrl}}"],"path":["api","v1","mensajes","planillas","1","enviar"]}}},
+        {"name":"Listar mensajes","request":{"method":"GET","url":{"raw":"{{baseUrl}}/api/v1/mensajes","host":["{{baseUrl}}"],"path":["api","v1","mensajes"]}}}
+      ]
+    },
+    {
+      "name":"6 - Respaldo",
+      "item":[
+        {"name":"Generar respaldo planilla 1","request":{"method":"POST","url":{"raw":"{{baseUrl}}/api/v1/respaldos/planillas/1","host":["{{baseUrl}}"],"path":["api","v1","respaldos","planillas","1"]}}},
+        {"name":"Listar respaldos","request":{"method":"GET","url":{"raw":"{{baseUrl}}/api/v1/respaldos","host":["{{baseUrl}}"],"path":["api","v1","respaldos"]}}}
+      ]
+    }
+  ]
+}

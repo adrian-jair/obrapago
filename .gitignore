@@ -1,0 +1,51 @@
+# ==========================================
+# Archivos pesados y Backups (Límite 100MB GitHub)
+# ==========================================
+ObraPago.zip
+*.zip
+*.tar.gz
+*.rar
+
+# ==========================================
+# Proyectos ajenos en la carpeta
+# ==========================================
+bomerp-backend/
+LP2-equipo01/
+
+# ==========================================
+# Frontend (Angular 22)
+# ==========================================
+obrapago-front/node_modules/
+obrapago-front/dist/
+obrapago-front/.angular/
+obrapago-front/tmp/
+obrapago-front/out-tsc/
+obrapago-front/.env
+
+# ==========================================
+# Backend (Spring Boot 3 / Java 21)
+# ==========================================
+ObraPago/target/
+ObraPago/*.log
+ObraPago/.mvn/timing.properties
+
+# ==========================================
+# Datos de Contenedores y Base de Datos
+# ==========================================
+oracle-data/
+*.db
+*.pdb
+
+# ==========================================
+# IDEs y Editores
+# ==========================================
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.settings/
+.project
+.classpath
+.DS_Store
+Thumbs.db

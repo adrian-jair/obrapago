@@ -1,0 +1,195 @@
+<div class="container-fluid">
+  <!-- Header de Sección -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom gap-2">
+    <div>
+      <h3 class="fw-bold text-dark mb-1">Módulo 4: Jornadas de Asistencia</h3>
+      <p class="text-muted mb-0">Control diario de jornales, horas extras, tardanzas y justificaciones en obra.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge" [ngClass]="isJornadaCerrada ? 'bg-danger fs-6' : 'bg-success fs-6'">
+        <i class="bi" [ngClass]="isJornadaCerrada ? 'bi-lock me-1' : 'bi-unlock me-1'"></i>
+        {{ isJornadaCerrada ? 'JORNADA CERRADA' : 'JORNADA ABIERTA' }}
+      </span>
+      <button *ngIf="!isJornadaCerrada && jornadaActual?.id" class="btn btn-outline-danger btn-sm fw-bold"
+        (click)="cerrarJornada()">
+        <i class="bi bi-lock-fill me-1"></i>Cerrar Jornada
+      </button>
+    </div>
+  </div>
+
+  <!-- Barra de Filtros y Estadísticas -->
+  <div class="row g-3 mb-4">
+    <!-- Selector de Fecha -->
+    <div class="col-lg-4 col-md-6">
+      <div class="card shadow-sm border-0 p-3 bg-white h-100 justify-content-center">
+        <label class="form-label fw-bold mb-1 text-secondary">Seleccionar Fecha de Jornada</label>
+        <div class="input-group">
+          <input type="date" class="form-control form-control-lg fw-bold text-primary" [(ngModel)]="fechaSeleccionada"
+            (change)="cambiarFecha()">
+          <button class="btn btn-outline-primary" (click)="cargarDatosDelDia()">
+            <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tarjetas de Resumen Rápido -->
+    <div class="col-lg-8 col-md-6">
+      <div class="row g-2 h-100">
+        <div class="col-6 col-md-3">
+          <div class="card border-0 bg-success-subtle text-success p-3 text-center h-100 rounded-3">
+            <span class="fs-4 fw-bold">{{ totalPresentes }}</span>
+            <small class="fw-semibold">Presentes</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 bg-warning-subtle text-warning-emphasis p-3 text-center h-100 rounded-3">
+            <span class="fs-4 fw-bold">{{ totalTardanzas }}</span>
+            <small class="fw-semibold">Tardanzas</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 bg-danger-subtle text-danger p-3 text-center h-100 rounded-3">
+            <span class="fs-4 fw-bold">{{ totalFaltas }}</span>
+            <small class="fw-semibold">Faltas</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 bg-primary-subtle text-primary p-3 text-center h-100 rounded-3">
+            <span class="fs-4 fw-bold">{{ totalHorasExtra }}h</span>
+            <small class="fw-semibold">Horas Extra</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botones de Acción Masiva -->
+  <div class="card shadow-sm border-0 rounded-3 mb-4">
+    <!-- Banner de modo consulta si no tiene permiso -->
+    <div *ngIf="!keycloak.canManageAsistencia()"
+      class="alert alert-secondary py-2 px-3 m-3 mb-0 small d-flex align-items-center justify-content-between border-0">
+      <div>
+        <i class="bi bi-shield-lock me-1"></i>
+        <strong>Modo Consulta ({{ keycloak.getUserFullName() }}):</strong>
+        <span class="ms-1">Las jornadas de asistencia se muestran en modo solo lectura. Solo el
+          <strong>ADMINISTRADOR</strong> y el <strong>SUPERVISOR</strong> pueden registrar asistencia en campo.</span>
+      </div>
+      <span class="badge" [ngClass]="keycloak.getRoleBadgeInfo().color">{{ keycloak.getRoleBadgeInfo().label }}</span>
+    </div>
+
+    <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <!-- Acciones Rápidas (Admin / Supervisor) -->
+      <div class="d-flex align-items-center gap-2" *ngIf="keycloak.canManageAsistencia()">
+        <span class="fw-bold text-dark">Acciones Rápidas:</span>
+        <button class="btn btn-sm btn-outline-success" (click)="marcarTodos('PRESENTE')" [disabled]="isJornadaCerrada">
+          <i class="bi bi-check2 me-1"></i>Todos Presentes
+        </button>
+        <button class="btn btn-sm btn-outline-warning" (click)="marcarTodos('TARDANZA')" [disabled]="isJornadaCerrada">
+          <i class="bi bi-clock me-1"></i>Todos Tardanza
+        </button>
+      </div>
+
+      <div class="d-flex align-items-center gap-2 ms-auto">
+        <input type="text" class="form-control form-control-sm" [(ngModel)]="filtroTexto"
+          placeholder="Filtrar obrero..." style="width: 220px;">
+        <button *ngIf="keycloak.canManageAsistencia()" class="btn btn-danger btn-sm fw-bold px-3 py-2"
+          (click)="guardarTodos()" [disabled]="isJornadaCerrada">
+          <i class="bi bi-save me-1"></i>Guardar Asistencias del Día
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabla de Asistencia de la Jornada -->
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>#</th>
+            <th>DNI</th>
+            <th>Apellidos y Nombres (A-Z)</th>
+            <th>Oficio</th>
+            <th style="min-width: 280px;">Estado de Asistencia</th>
+            <th style="width: 110px;">H. Extra</th>
+            <th>Observación / Justificación</th>
+            <th class="text-center" style="width: 80px;">Guardado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let o of obrerosFiltrados; let idx = index">
+            <td><small class="text-muted">{{ idx + 1 }}</small></td>
+            <td><span class="badge bg-light text-dark border">{{ o.dni }}</span></td>
+            <td><strong class="text-primary">{{ o.apellidos }}</strong>, {{ o.nombres }}</td>
+            <td><small class="text-secondary">{{ o.oficio }}</small></td>
+            <td>
+              <!-- Modo editable para Admin / Supervisor -->
+              <div *ngIf="keycloak.canManageAsistencia()" class="btn-group btn-group-sm w-100" role="group">
+                <button type="button" class="btn"
+                  [ngClass]="o.estado === 'PRESENTE' ? 'btn-success fw-bold' : 'btn-outline-secondary'"
+                  (click)="cambiarEstado(o, 'PRESENTE')">
+                  Presente
+                </button>
+                <button type="button" class="btn"
+                  [ngClass]="o.estado === 'TARDANZA' ? 'btn-warning fw-bold' : 'btn-outline-secondary'"
+                  (click)="cambiarEstado(o, 'TARDANZA')">
+                  Tardanza
+                </button>
+                <button type="button" class="btn"
+                  [ngClass]="o.estado === 'FALTA_JUSTIFICADA' ? 'btn-info text-white fw-bold' : 'btn-outline-secondary'"
+                  (click)="cambiarEstado(o, 'FALTA_JUSTIFICADA')">
+                  Justificada
+                </button>
+                <button type="button" class="btn"
+                  [ngClass]="o.estado === 'FALTA_INJUSTIFICADA' ? 'btn-danger fw-bold' : 'btn-outline-secondary'"
+                  (click)="cambiarEstado(o, 'FALTA_INJUSTIFICADA')">
+                  Falta
+                </button>
+              </div>
+              <!-- Modo solo lectura para Planillero y Obrero -->
+              <div *ngIf="!keycloak.canManageAsistencia()">
+                <span class="badge fs-6" [ngClass]="{
+                  'bg-success': o.estado === 'PRESENTE',
+                  'bg-warning text-dark': o.estado === 'TARDANZA',
+                  'bg-info text-white': o.estado === 'FALTA_JUSTIFICADA',
+                  'bg-danger': o.estado === 'FALTA_INJUSTIFICADA'
+                }">{{ o.estado }}</span>
+              </div>
+            </td>
+            <td>
+              <input type="number" min="0" max="12" step="0.5" class="form-control form-control-sm text-center fw-bold"
+                [(ngModel)]="o.horasExtra" [disabled]="isJornadaCerrada || !keycloak.canManageAsistencia()"
+                (ngModelChange)="o.guardado = false">
+            </td>
+            <td>
+              <input type="text" class="form-control form-control-sm" [(ngModel)]="o.observacion"
+                placeholder="Motivo o frente..." [disabled]="isJornadaCerrada || !keycloak.canManageAsistencia()"
+                (ngModelChange)="o.guardado = false">
+            </td>
+            <td class="text-center">
+              <span *ngIf="o.guardado" class="badge bg-success-subtle text-success border border-success">
+                <i class="bi bi-check2 me-1"></i>Ok
+              </span>
+              <span *ngIf="!o.guardado" class="badge bg-warning-subtle text-warning border border-warning">
+                <i class="bi bi-clock-history me-1"></i>Pendiente
+              </span>
+            </td>
+          </tr>
+          <tr *ngIf="obrerosFiltrados.length === 0">
+            <td colspan="8" class="text-center py-4 text-muted">
+              {{ cargando ? 'Cargando trabajadores de la jornada...' : 'No hay obreros para mostrar.' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card-footer bg-light py-3 d-flex justify-content-between align-items-center">
+      <small class="text-muted">Tip: Las faltas justificadas cuentan como jornada remunerada según normativa de
+        obra.</small>
+      <button *ngIf="keycloak.canManageAsistencia()" class="btn btn-primary fw-bold px-3 py-2" (click)="guardarTodos()"
+        [disabled]="isJornadaCerrada">
+        Guardar Asistencias de la Jornada
+      </button>
+    </div>
+  </div>
+</div>

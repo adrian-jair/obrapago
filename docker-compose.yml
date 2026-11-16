@@ -1,0 +1,84 @@
+name: obrapago-system
+
+services:
+  # 1. Base de Datos Oracle 23c Free
+  oracle:
+    image: gvenzl/oracle-free:23-slim
+    container_name: obrapago-oracle
+    restart: unless-stopped
+    ports:
+      - "1521:1521"
+    environment:
+      ORACLE_PASSWORD: "123456"
+      APP_USER: "OBRAPAGO"
+      APP_USER_PASSWORD: "123456"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks:
+      - obrapago-net
+
+  # 2. Servidor de Identidad Keycloak
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1
+    container_name: obrapago-keycloak
+    restart: unless-stopped
+    command: start-dev --import-realm
+    ports:
+      - "8081:8080"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm.json:ro
+    networks:
+      - obrapago-net
+
+  # 3. Backend Spring Boot (ObraPago)
+  backend:
+    build:
+      context: ./ObraPago
+      dockerfile: Dockerfile
+    container_name: obrapago-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      OBRAPAGO_DB_URL: jdbc:oracle:thin:@//oracle:1521/FREEPDB1
+      OBRAPAGO_DB_USER: OBRAPAGO
+      OBRAPAGO_DB_PASSWORD: "123456"
+      app.cors.allowed-origins: "http://localhost:4200,http://127.0.0.1:4200,http://frontend:80"
+    depends_on:
+      oracle:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      - obrapago-net
+
+  # 4. Frontend Angular (Nginx)
+  frontend:
+    build:
+      context: ./obrapago-front
+      dockerfile: Dockerfile
+    container_name: obrapago-frontend
+    restart: unless-stopped
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+    networks:
+      - obrapago-net
+
+networks:
+  obrapago-net:
+    driver: bridge
+
+volumes:
+  oracle-data:

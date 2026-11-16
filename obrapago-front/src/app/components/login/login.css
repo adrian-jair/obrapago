@@ -1,0 +1,14 @@
+.login-wrapper {
+  min-height: 85vh;
+  padding: 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 480px;
+  background: #ffffff;
+}
+
+.brand-icon {
+  font-size: 3rem;
+}

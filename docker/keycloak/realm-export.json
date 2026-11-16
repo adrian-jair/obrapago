@@ -1,0 +1,120 @@
+{
+  "realm": "obrapago-realm",
+  "enabled": true,
+  "displayName": "ObraPago Security Realm",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "roles": {
+    "realm": [
+      { "name": "ADMIN", "description": "Administrador total del sistema" },
+      { "name": "SUPERVISOR", "description": "Ingeniero / Maestro de obra supervisor" },
+      { "name": "PLANILLERO", "description": "Encargado de planillas y liquidaciones" },
+      { "name": "CONSULTA", "description": "Consulta de boletas y jornales" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "obrapago-front",
+      "name": "ObraPago Frontend Angular",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "rootUrl": "http://localhost:4200/",
+      "baseUrl": "http://localhost:4200/",
+      "redirectUris": [
+        "http://localhost:4200/*",
+        "http://127.0.0.1:4200/*"
+      ],
+      "webOrigins": [
+        "*"
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "profile",
+        "roles",
+        "email"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@obrapago.pe",
+      "firstName": "Admin",
+      "lastName": "Principal",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN",
+        "SUPERVISOR",
+        "PLANILLERO"
+      ]
+    },
+    {
+      "username": "supervisor",
+      "enabled": true,
+      "email": "supervisor@obrapago.pe",
+      "firstName": "Ing. Carlos",
+      "lastName": "Supervisor",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "supervisor",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "SUPERVISOR"
+      ]
+    },
+    {
+      "username": "planillero",
+      "enabled": true,
+      "email": "planillas@obrapago.pe",
+      "firstName": "Lic. Ana",
+      "lastName": "Planillas",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "planillero",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "PLANILLERO"
+      ]
+    },
+    {
+      "username": "obrero",
+      "enabled": true,
+      "email": "obrero@obrapago.pe",
+      "firstName": "Juan",
+      "lastName": "Estrada",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "obrero",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "CONSULTA"
+      ]
+    }
+  ]
+}

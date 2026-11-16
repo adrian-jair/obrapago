@@ -1,0 +1,22 @@
+.avatar-circle {
+  width: 90px;
+  height: 90px;
+  background: #e2e8f0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+@media print {
+
+  .no-print,
+  .top-nav,
+  button {
+    display: none !important;
+  }
+}

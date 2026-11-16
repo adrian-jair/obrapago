@@ -1,0 +1,6 @@
+site_name: ObraPago - LP2 Unidad 1
+nav:
+  - Inicio: index.md
+  - Producto U1: lp2-demo.md
+theme:
+  name: material

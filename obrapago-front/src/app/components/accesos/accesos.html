@@ -1,0 +1,121 @@
+<div class="container-fluid">
+  <!-- Header de Sección -->
+  <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+      <h3 class="fw-bold text-dark mb-1">Módulo 9: Auditoría y Registro de Accesos</h3>
+      <p class="text-muted mb-0">Trazabilidad de seguridad, registros de autenticación, IPs de conexión y eventos en ObraPago.</p>
+    </div>
+    <span class="badge bg-primary px-3 py-2 fs-6">
+      Total Eventos: {{ accesos.length }}
+    </span>
+  </div>
+
+  <div class="row">
+    <!-- Formulario / Panel de Auditoría Rápida -->
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-header bg-dark text-white py-3">
+          <h5 class="card-title fw-bold mb-0"><i class="bi bi-shield-plus me-2"></i>Registrar Evento de Auditoría</h5>
+        </div>
+        <div class="card-body p-4">
+          <form (ngSubmit)="simularEvento()">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Usuario</label>
+              <input type="text" class="form-control" [(ngModel)]="nuevoLog.username" name="username" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Rol</label>
+              <input type="text" class="form-control" [(ngModel)]="nuevoLog.rol" name="rol" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Tipo de Acción</label>
+              <select class="form-select" [(ngModel)]="nuevoLog.accion" name="accion">
+                <option value="LOGIN_EXITOSO">LOGIN_EXITOSO (Inicio de sesión)</option>
+                <option value="LOGIN_FALLIDO">LOGIN_FALLIDO (Credenciales inválidas)</option>
+                <option value="LOGOUT">LOGOUT (Cierre de sesión)</option>
+                <option value="CONSULTA_PLANILLA">CONSULTA_PLANILLA</option>
+                <option value="MODIFICACION_CONTRATO">MODIFICACION_CONTRATO</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Mensaje o Detalle</label>
+              <input type="text" class="form-control" [(ngModel)]="nuevoLog.mensaje" name="mensaje" required>
+            </div>
+
+            <div class="form-check form-switch mb-4">
+              <input class="form-check-input" type="checkbox" id="logExito" [(ngModel)]="nuevoLog.exito" name="exito">
+              <label class="form-check-label fw-semibold" for="logExito">Acción Exitosa</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 fw-bold py-2">
+              <i class="bi bi-shield-check me-1"></i>Registrar Evento
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de Accesos -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+          <h5 class="fw-bold mb-0 text-dark">Log de Auditoría del Sistema</h5>
+          <div class="d-flex gap-2">
+            <input type="text" class="form-control form-control-sm" [(ngModel)]="filtroUsuario" placeholder="Buscar por usuario..." style="width: 200px;">
+            <button class="btn btn-sm btn-outline-secondary" (click)="cargarAccesos()"><i class="bi bi-arrow-clockwise"></i></button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover table-striped align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th style="width: 80px;">N°</th>
+                <th>Fecha / Hora</th>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Acción</th>
+                <th>IP Remota</th>
+                <th>Estado</th>
+                <th>Detalle</th>
+                <th class="text-end">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let a of accesos; let idx = index">
+                <td>
+                  <span class="badge bg-light text-dark border fw-bold">N° {{ idx + 1 }}</span>
+                  <div class="text-muted small">#{{ a.id }}</div>
+                </td>
+                <td><small>{{ a.fechaHora | date:'dd/MM/yyyy HH:mm:ss' }}</small></td>
+                <td><strong class="text-primary">{{ a.username }}</strong></td>
+                <td><span class="badge bg-light text-dark border">{{ a.rol }}</span></td>
+                <td><code>{{ a.accion }}</code></td>
+                <td><small class="text-secondary">{{ a.ipRemota || '127.0.0.1' }}</small></td>
+                <td>
+                  <span class="badge" [ngClass]="a.exito ? 'bg-success' : 'bg-danger'">
+                    {{ a.exito ? 'Éxito' : 'Fallo' }}
+                  </span>
+                </td>
+                <td><small class="text-muted">{{ a.mensaje }}</small></td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-danger" (click)="eliminar(a.id)" title="Eliminar este registro de auditoría">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="accesos.length === 0">
+                <td colspan="9" class="text-center py-4 text-muted">
+                  {{ cargando ? 'Cargando registros de auditoría...' : 'No hay registros de accesos aún.' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

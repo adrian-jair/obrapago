@@ -1,0 +1,34 @@
+.boleta-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 2000;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.boleta-modal {
+  width: 100%;
+  max-width: 780px;
+  background: #ffffff;
+  border-radius: 12px;
+}
+
+@media print {
+  .no-print, .top-nav, .card-header, button {
+    display: none !important;
+  }
+  .boleta-overlay {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+  .boleta-modal {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+  }
+}

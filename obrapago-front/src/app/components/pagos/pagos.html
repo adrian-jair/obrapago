@@ -1,0 +1,153 @@
+<div class="container-fluid">
+  <!-- Header de Sección -->
+  <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+      <h3 class="fw-bold text-dark mb-1">Módulo 5: Planilla Mensual de Pagos</h3>
+      <p class="text-muted mb-0">Cálculo automatizado de nómina mensual correlativa (Planilla N° 1, N° 2, N° 3...).</p>
+    </div>
+    <span class="badge bg-primary px-3 py-2 fs-6">
+      Planillas Registradas: {{ planillas.length }}
+    </span>
+  </div>
+
+  <div class="row">
+    <!-- Formulario de Cálculo de Planilla (Admin o Planillero) -->
+    <div class="col-lg-4 mb-4" *ngIf="keycloak.canManagePagos()">
+      <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+          <h5 class="card-title fw-bold mb-0"><i class="bi bi-gear-fill me-2"></i>Procesar Planilla de Pagos</h5>
+          <span class="badge bg-warning text-dark">PLANILLERO</span>
+        </div>
+        <div class="card-body p-4">
+          <!-- Accesos directos a mes -->
+          <div class="d-flex gap-2 mb-3">
+            <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1" (click)="establecerMesActual()">
+              <i class="bi bi-calendar-event me-1"></i>Mes Actual
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1"
+              (click)="establecerMesAnterior()">
+              <i class="bi bi-calendar-minus me-1"></i>Mes Anterior
+            </button>
+          </div>
+
+          <form (ngSubmit)="procesar()">
+            <div class="mb-3">
+              <label class="form-label fw-bold text-secondary">Fecha Inicio del Periodo</label>
+              <input type="date" class="form-control" [(ngModel)]="fechas.fechaInicio" name="fechaInicio" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold text-secondary">Fecha Fin del Periodo</label>
+              <input type="date" class="form-control" [(ngModel)]="fechas.fechaFin" name="fechaFin" required>
+              <small class="text-muted">El periodo legal no debe exceder los 31 días.</small>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-bold text-secondary">Descuento por Tardanza (S/.)</label>
+              <input type="number" step="0.5" class="form-control" [(ngModel)]="fechas.descuentoPorTardanza"
+                name="descuentoPorTardanza">
+              <small class="text-muted">Descuento fijado por cada tardanza registrada.</small>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">
+              <i class="bi bi-calculator me-1"></i>Liquidar y Calcular Planilla
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historial de Planillas Generadas -->
+    <div [ngClass]="keycloak.canManagePagos() ? 'col-lg-8' : 'col-lg-12'">
+      <div class="card shadow-sm border-0 rounded-3">
+        <!-- Banner cuando no es Planillero ni Admin -->
+        <div *ngIf="!keycloak.canManagePagos()"
+          class="alert alert-secondary py-2 px-3 m-3 mb-0 small d-flex align-items-center justify-content-between border-0">
+          <div>
+            <i class="bi bi-shield-lock me-1"></i>
+            <strong>Modo Consulta ({{ keycloak.getUserFullName() }}):</strong>
+            <span class="ms-1">Las planillas de pago se muestran en modo solo lectura. Solo el
+              <strong>ADMINISTRADOR</strong> y el <strong>PLANILLERO</strong> pueden liquidar o efectuar pagos.</span>
+          </div>
+          <span class="badge" [ngClass]="keycloak.getRoleBadgeInfo().color">{{ keycloak.getRoleBadgeInfo().label
+            }}</span>
+        </div>
+
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+          <h5 class="card-title fw-bold mb-0 text-dark">Historial de Planillas</h5>
+          <button class="btn btn-outline-secondary btn-sm" (click)="cargarPlanillas()"><i
+              class="bi bi-arrow-clockwise me-1"></i>Actualizar</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover table-striped align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th style="width: 140px;">N° Planilla</th>
+                <th>Periodo de Pago</th>
+                <th>Trabajadores</th>
+                <th>Total Neto (S/.)</th>
+                <th>Estado</th>
+                <th>Generada el</th>
+                <th class="text-end" style="min-width: 220px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of planillas">
+                <td>
+                  <span class="badge bg-light text-dark border fw-bold fs-6">Planilla N° {{ p.numeroSecuencial }}</span>
+                  <div class="text-muted small mt-1">Ref. BD: #{{ p.id }}</div>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border">{{ p.fechaInicio }}</span>
+                  <span class="text-muted mx-1">al</span>
+                  <span class="badge bg-light text-dark border">{{ p.fechaFin }}</span>
+                </td>
+                <td>
+                  <span class="badge bg-secondary-subtle text-secondary border">
+                    {{ p.totalTrabajadores || p.detalles?.length || 0 }} obreros
+                  </span>
+                </td>
+                <td>
+                  <strong class="text-success fs-6">S/. {{ p.totalNeto | number:'1.2-2' }}</strong>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="{
+                    'bg-success': p.estado === 'PAGADO' || p.estado === 'PAGADA',
+                    'bg-warning text-dark': p.estado === 'GENERADA',
+                    'bg-danger': p.estado === 'ANULADA'
+                  }">
+                    {{ p.estado }}
+                  </span>
+                </td>
+                <td>
+                  <small class="text-muted">{{ p.generadaEn ? (p.generadaEn | date:'short') : '-' }}</small>
+                </td>
+                <td class="text-end">
+                  <div class="d-flex justify-content-end align-items-center gap-1">
+                    <button class="btn btn-sm btn-outline-info" (click)="verDetalles(p)" title="Ver Detalles de Pago (Módulo 8)">
+                      <i class="bi bi-receipt me-1"></i>Nómina
+                    </button>
+                    <button *ngIf="keycloak.canManagePagos() && p.estado === 'GENERADA'" class="btn btn-sm btn-outline-success" (click)="pagar(p.id)" title="Marcar como Pagada">
+                      <i class="bi bi-cash-stack me-1"></i>Pagar
+                    </button>
+                    <button *ngIf="keycloak.canManagePagos() && p.estado === 'GENERADA'" class="btn btn-sm btn-outline-warning" (click)="anular(p.id)" title="Anular planilla">
+                      <i class="bi bi-slash-circle me-1"></i>Anular
+                    </button>
+                    <button *ngIf="keycloak.canManagePagos()" class="btn btn-sm btn-outline-danger fw-bold" (click)="eliminar(p.id)" title="Eliminar definitivamente esta planilla">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="planillas.length === 0">
+                <td colspan="7" class="text-center py-4 text-muted">
+                  {{ cargando ? 'Cargando planillas...' : 'No hay planillas generadas en el sistema.' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,167 @@
+<div class="container-fluid">
+  <!-- Header de Sección -->
+  <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+      <h3 class="fw-bold text-dark mb-1">Módulo 6: Detalles de Asistencia</h3>
+      <p class="text-muted mb-0">Explorador detallado de asistencias individuales por obrero, filtros avanzados y justificación de inasistencias.</p>
+    </div>
+    <span class="badge bg-primary px-3 py-2 fs-6">
+      Registros Encontrados: {{ detalles.length }}
+    </span>
+  </div>
+
+  <!-- Barra de Filtros -->
+  <div class="card shadow-sm border-0 rounded-3 mb-3 p-3 bg-white">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label fw-bold text-secondary mb-1">Filtrar por Obrero</label>
+        <select class="form-select" [(ngModel)]="filtroObreroId" (change)="cargarDetalles()">
+          <option [ngValue]="null">-- Todos los obreros --</option>
+          <option *ngFor="let o of obreros; let idx = index" [ngValue]="o.id">
+            {{ idx + 1 }}. {{ o.apellidos }}, {{ o.nombres }} (DNI: {{ o.dni }})
+          </option>
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label fw-bold text-secondary mb-1">Estado</label>
+        <select class="form-select" [(ngModel)]="filtroEstado" (change)="cargarDetalles()">
+          <option value="">-- Todos los estados --</option>
+          <option *ngFor="let est of estadosAsistencia" [value]="est">{{ est }}</option>
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label fw-bold text-secondary mb-1">Desde</label>
+        <input type="date" class="form-control" [(ngModel)]="filtroDesde" (change)="cargarDetalles()">
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label fw-bold text-secondary mb-1">Hasta</label>
+        <input type="date" class="form-control" [(ngModel)]="filtroHasta" (change)="cargarDetalles()">
+      </div>
+
+      <div class="col-md-2 d-flex gap-2">
+        <button class="btn btn-primary flex-grow-1 fw-bold" (click)="cargarDetalles()">
+          <i class="bi bi-search me-1"></i>Filtrar
+        </button>
+        <button class="btn btn-outline-secondary" (click)="limpiarFiltros()">
+          Limpiar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumen Rápido / Estadísticas de la Consulta Actual -->
+  <div class="card shadow-sm border-0 rounded-3 mb-4 p-3 bg-light">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <span class="text-secondary fw-bold me-2">Resumen de Asistencias:</span>
+      <button class="btn btn-sm" [ngClass]="filtroEstado === '' ? 'btn-dark' : 'btn-outline-dark'" (click)="setFiltroEstado('')">
+        Todos: <strong>{{ detalles.length }}</strong>
+      </button>
+      <button class="btn btn-sm" [ngClass]="filtroEstado === 'PRESENTE' ? 'btn-success' : 'btn-outline-success'" (click)="setFiltroEstado('PRESENTE')">
+        <i class="bi bi-check2 me-1"></i>Presentes: <strong>{{ totalPresentes }}</strong>
+      </button>
+      <button class="btn btn-sm" [ngClass]="filtroEstado === 'TARDANZA' ? 'btn-warning' : 'btn-outline-warning'" (click)="setFiltroEstado('TARDANZA')">
+        <i class="bi bi-clock me-1"></i>Tardanzas: <strong>{{ totalTardanzas }}</strong>
+      </button>
+      <button class="btn btn-sm" [ngClass]="filtroEstado === 'FALTA_JUSTIFICADA' ? 'btn-info' : 'btn-outline-info'" (click)="setFiltroEstado('FALTA_JUSTIFICADA')">
+        <i class="bi bi-info-circle me-1"></i>Faltas Justif.: <strong>{{ totalFaltasJustificadas }}</strong>
+      </button>
+      <button class="btn btn-sm" [ngClass]="filtroEstado === 'FALTA_INJUSTIFICADA' ? 'btn-danger' : 'btn-outline-danger'" (click)="setFiltroEstado('FALTA_INJUSTIFICADA')">
+        <i class="bi bi-x-circle me-1"></i>Faltas Injustif.: <strong>{{ totalFaltasInjustificadas }}</strong>
+      </button>
+      <span class="badge bg-secondary p-2 ms-auto fs-6">
+        <i class="bi bi-stopwatch me-1"></i>Horas Extra: {{ totalHorasExtra }} hrs
+      </span>
+    </div>
+  </div>
+
+  <!-- Modal / Formulario Flotante de Edición de Detalle -->
+  <div *ngIf="detalleEdicion" class="card border-primary shadow mb-4 p-3 bg-light">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="fw-bold text-primary mb-0">
+        <i class="bi bi-pencil-square me-1"></i>Modificar Detalle de Asistencia - {{ detalleEdicion.obreroNombre }} (Fecha: {{ detalleEdicion.fecha }})
+      </h5>
+      <button class="btn-close" (click)="cerrarEdicion()"></button>
+    </div>
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label fw-bold">Estado</label>
+        <select class="form-select" [(ngModel)]="detalleEdicion.estadoAsistencia">
+          <option *ngFor="let est of estadosAsistencia" [value]="est">{{ est }}</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label fw-bold">Horas Extra</label>
+        <input type="number" step="0.5" min="0" class="form-control" [(ngModel)]="detalleEdicion.horasExtra">
+      </div>
+      <div class="col-md-5">
+        <label class="form-label fw-bold">Observación / Justificación</label>
+        <input type="text" class="form-control" [(ngModel)]="detalleEdicion.observacion" placeholder="Motivo o detalle">
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button class="btn btn-success fw-bold flex-grow-1" (click)="guardarEdicion()">Guardar</button>
+        <button class="btn btn-secondary" (click)="cerrarEdicion()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Detalles de Asistencia -->
+  <div class="card shadow-sm border-0 rounded-3">
+    <div class="table-responsive">
+      <table class="table table-hover table-striped align-middle mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th style="width: 70px;">N°</th>
+            <th>Fecha</th>
+            <th>DNI</th>
+            <th>Trabajador (A-Z)</th>
+            <th>Oficio</th>
+            <th>Estado Asistencia</th>
+            <th>H. Extra</th>
+            <th>Observación / Justificación</th>
+            <th class="text-end" *ngIf="keycloak.canManageAsistencia()">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let d of detalles; let idx = index">
+            <td>
+              <span class="badge bg-light text-dark border fw-bold">N° {{ idx + 1 }}</span>
+            </td>
+            <td><strong>{{ d.fecha }}</strong></td>
+            <td><span class="badge bg-light text-dark border">{{ d.obreroDni }}</span></td>
+            <td><strong>{{ d.obreroNombreCompleto }}</strong></td>
+            <td><small class="text-secondary">{{ d.oficio }}</small></td>
+            <td>
+              <span class="badge" [ngClass]="{
+                'bg-success': d.estadoAsistencia === 'PRESENTE',
+                'bg-warning text-dark': d.estadoAsistencia === 'TARDANZA',
+                'bg-info text-white': d.estadoAsistencia === 'FALTA_JUSTIFICADA',
+                'bg-danger': d.estadoAsistencia === 'FALTA_INJUSTIFICADA'
+              }">
+                {{ d.estadoAsistencia }}
+              </span>
+            </td>
+            <td>
+              <strong class="text-primary">{{ d.horasExtra || 0 }} h</strong>
+            </td>
+            <td>
+              <small class="text-muted">{{ d.observacion || '-' }}</small>
+            </td>
+            <td class="text-end" *ngIf="keycloak.canManageAsistencia()">
+              <button class="btn btn-sm btn-outline-primary" (click)="abrirEdicion(d)" title="Editar detalle">
+                <i class="bi bi-pencil me-1"></i>Ajustar
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="detalles.length === 0">
+            <td [attr.colspan]="keycloak.canManageAsistencia() ? 9 : 8" class="text-center py-4 text-muted">
+              {{ cargando ? 'Cargando registros...' : 'No se encontraron registros de asistencia para los filtros seleccionados.' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

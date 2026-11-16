@@ -1,0 +1,181 @@
+.asistencia-box {
+  max-width: 1050px;
+  margin: 20px auto;
+  font-family: inherit;
+}
+
+.header-control {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  padding: 20px 25px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  margin-bottom: 15px;
+}
+
+.header-control h2 {
+  margin: 0 0 5px 0;
+  color: #2c3e50;
+}
+
+.subtitulo {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 14px;
+}
+
+.filtro-fecha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.input-fecha {
+  padding: 8px 12px;
+  font-size: 15px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  outline: none;
+}
+
+.acciones-top {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 15px;
+}
+
+.btn-guardar-todos {
+  background-color: #198754;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-guardar-todos:hover {
+  background-color: #157347;
+}
+
+.tabla-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  overflow-x: auto;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla th, .tabla td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #edf2f7;
+  font-size: 14px;
+}
+
+.tabla th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+}
+
+.oficio-badge {
+  background: #e2e8f0;
+  color: #334155;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.btn-group-estado {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-estado {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #64748b;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.btn-estado:hover {
+  background: #e2e8f0;
+}
+
+.activo-presente {
+  background: #22c55e !important;
+  color: white !important;
+  border-color: #16a34a !important;
+}
+
+.activo-tardanza {
+  background: #f59e0b !important;
+  color: white !important;
+  border-color: #d97706 !important;
+}
+
+.activo-falta {
+  background: #ef4444 !important;
+  color: white !important;
+  border-color: #dc2626 !important;
+}
+
+.input-horas {
+  width: 50px;
+  padding: 4px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.btn-guardar-fila {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.btn-guardar-fila:hover {
+  background: #2563eb;
+}
+
+.badge-ok {
+  color: #16a34a;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.sin-datos {
+  text-align: center;
+  padding: 30px;
+  color: #94a3b8;
+}
+.activo-permiso {
+  background-color: #0dcaf0 !important;
+  color: #000 !important;
+  font-weight: bold;
+}
+.activo-permiso {
+  background-color: #0dcaf0 !important;
+  color: #000 !important;
+  font-weight: bold;
+}

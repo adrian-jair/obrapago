@@ -1,0 +1,164 @@
+<div class="container-fluid">
+  <!-- Header de Sección -->
+  <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+      <h3 class="fw-bold text-dark mb-1">Módulo 7: Adelantos y Vales de Caja</h3>
+      <p class="text-muted mb-0">Control de entregas a cuenta y vales de caja chica con numeración correlativa por cada obrero (1, 2, 3...).</p>
+    </div>
+    <span class="badge bg-warning text-dark px-3 py-2 fs-6">
+      Total Vales Activos: S/. {{ totalImporteActivo | number:'1.2-2' }}
+    </span>
+  </div>
+
+  <div class="row">
+    <!-- Formulario Registrar Vale (Admin o Planillero) -->
+    <div class="col-lg-4 mb-4" *ngIf="keycloak.canManageAdelantos()">
+      <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+          <h5 class="card-title fw-bold mb-0">
+            <i class="bi bi-cash-coin me-1"></i>Emitir Vale de Adelanto
+          </h5>
+          <span class="badge bg-warning text-dark">PLANILLAS</span>
+        </div>
+        <div class="card-body p-4">
+          <form (ngSubmit)="guardarAdelanto()">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Trabajador / Obrero (A-Z)</label>
+              <select class="form-select" [(ngModel)]="nuevoAdelanto.obreroId" name="obreroId" required>
+                <option [ngValue]="null">-- Seleccionar obrero --</option>
+                <option *ngFor="let ob of obreros; let idx = index" [ngValue]="ob.id">
+                  {{ idx + 1 }}. {{ ob.apellidos }}, {{ ob.nombres }} (DNI: {{ ob.dni }})
+                </option>
+              </select>
+            </div>
+
+            <!-- Previsualización de la numeración del nuevo adelanto -->
+            <div *ngIf="nuevoAdelanto.obreroId" class="alert alert-info py-2 px-3 small mb-3 border-0 bg-info-subtle">
+              <div class="fw-bold text-primary">
+                <i class="bi bi-info-circle me-1"></i>Secuencia de Vales para este trabajador:
+              </div>
+              <div class="text-dark">
+                Actualmente tiene registrado(s): <strong>{{ obtenerTotalAdelantosObrero(nuevoAdelanto.obreroId) }}</strong> adelanto(s).
+              </div>
+              <div class="mt-1 text-primary fw-bold">
+                Este nuevo vale se registrará como: <span class="badge bg-light text-dark border fs-6">Adelanto N° {{ obtenerSiguienteSecuencia(nuevoAdelanto.obreroId) }}</span>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Fecha del Vale</label>
+              <input type="date" class="form-control" [(ngModel)]="nuevoAdelanto.fecha" name="fecha" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Importe (S/.)</label>
+              <input type="number" class="form-control" [(ngModel)]="nuevoAdelanto.importe" name="importe" required min="1" step="0.5">
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-bold">Concepto / Motivo</label>
+              <input type="text" class="form-control" [(ngModel)]="nuevoAdelanto.concepto" name="concepto" placeholder="ej. Vale de caja chica para pasajes" required>
+            </div>
+
+            <button type="submit" class="btn btn-warning w-100 fw-bold py-2 shadow-sm">
+              <i class="bi bi-cash-stack me-1"></i>Registrar Adelanto
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de Vales Emitidos -->
+    <div [ngClass]="keycloak.canManageAdelantos() ? 'col-lg-8' : 'col-lg-12'">
+      <div class="card shadow-sm border-0 rounded-3">
+        <!-- Banner cuando no es Planillero ni Admin -->
+        <div *ngIf="!keycloak.canManageAdelantos()" class="alert alert-secondary py-2 px-3 m-3 mb-0 small d-flex align-items-center justify-content-between border-0">
+          <div>
+            <i class="bi bi-shield-lock me-1"></i>
+            <strong>Modo Consulta ({{ keycloak.getUserFullName() }}):</strong>
+            <span class="ms-1">Los vales y adelantos se muestran en modo solo lectura. Solo el <strong>ADMINISTRADOR</strong> y el <strong>PLANILLERO</strong> pueden emitir o anular vales.</span>
+          </div>
+          <span class="badge" [ngClass]="keycloak.getRoleBadgeInfo().color">{{ keycloak.getRoleBadgeInfo().label }}</span>
+        </div>
+
+        <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <h5 class="fw-bold mb-0 text-dark">Historial de Vales Registrados</h5>
+          <div class="d-flex align-items-center gap-2">
+            <select class="form-select form-select-sm" [(ngModel)]="filtroObreroId" (change)="cargarAdelantos()" style="min-width: 250px;">
+              <option [ngValue]="null">-- Todos los obreros --</option>
+              <option *ngFor="let o of obreros; let idx = index" [ngValue]="o.id">
+                {{ idx + 1 }}. {{ o.apellidos }}, {{ o.nombres }}
+              </option>
+            </select>
+            <button class="btn btn-sm btn-outline-secondary" (click)="cargarAdelantos()" title="Recargar">
+              <i class="bi bi-arrow-clockwise"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Indicador de filtro activo -->
+        <div *ngIf="filtroObreroId" class="alert alert-warning py-2 px-3 m-3 mb-0 small d-flex justify-content-between align-items-center border-0">
+          <div>
+            <i class="bi bi-search me-1"></i>Mostrando los adelantos de <strong>{{ obtenerNombreObrero(filtroObreroId) }}</strong> 
+            (Total: <strong>{{ adelantos.length }}</strong> adelantos, ordenados del N° 1 al N° {{ adelantos.length }}).
+          </div>
+          <button class="btn btn-sm btn-outline-dark" (click)="limpiarFiltroObrero()">Ver todos</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover table-striped align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th style="width: 70px;">Fila</th>
+                <th style="width: 170px;">N° Adelanto</th>
+                <th>Fecha</th>
+                <th>Trabajador / Obrero</th>
+                <th>Concepto</th>
+                <th class="text-end">Importe (S/.)</th>
+                <th>Estado</th>
+                <th class="text-end" *ngIf="keycloak.canManageAdelantos()">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let a of adelantos; let idx = index">
+                <td>
+                  <span class="badge bg-light text-dark border">#{{ idx + 1 }}</span>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border fw-bold px-2 py-1 fs-6">
+                    Adelanto N° {{ a.numeroSecuencial }}
+                  </span>
+                  <div class="text-muted small mt-1">Ref. BD: #{{ a.id }}</div>
+                </td>
+                <td><strong>{{ a.fecha }}</strong></td>
+                <td>
+                  <strong class="text-dark">{{ a.nombreCompleto || a.obreroNombreCompleto }}</strong>
+                  <div class="text-muted small">DNI: {{ a.dni || a.obreroDni }}</div>
+                </td>
+                <td>{{ a.concepto }}</td>
+                <td class="text-end fw-bold text-danger">
+                  S/. {{ a.importe | number:'1.2-2' }}
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="a.estado === 'REGISTRADO' ? 'bg-warning text-dark' : 'bg-secondary'">
+                    {{ a.estado }}
+                  </span>
+                </td>
+                <td class="text-end" *ngIf="keycloak.canManageAdelantos()">
+                  <button *ngIf="a.estado === 'REGISTRADO'" class="btn btn-sm btn-outline-danger" (click)="anular(a.id)" title="Anular Vale">
+                    <i class="bi bi-x-circle me-1"></i>Anular
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="adelantos.length === 0">
+                <td [attr.colspan]="keycloak.canManageAdelantos() ? 8 : 7" class="text-center py-4 text-muted">
+                  {{ cargando ? 'Cargando adelantos...' : 'No hay adelantos registrados.' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
